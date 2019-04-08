@@ -41,6 +41,8 @@ An addition dictionary was used to map each unique item to a set of all transact
 ```
 This was useful when getting the frequent 1-itemsets as well as when getting the support count for an item_set. The first item in the item_set was removed, and only those transactions were iterated through to check if the transaction contains the entire item_set. Since the dictionary functions with hashing, this saved complexity during these calculations.
 
+Lastly, to store the candidate item_sets, such as with lk1 and fk, I used a set which contained frozenset versions of item_sets. My choice for this was based on the fact that python sets can only contain objects like a set if they are immutable since they get hashed. I wanted the O(1) look-up time of sets within a set.
+
 ### def generate_F1(minsupp):
 Parameters:
 ```
