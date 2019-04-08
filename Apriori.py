@@ -26,38 +26,48 @@ def parse_data_file_args():
     args = parser.parse_args()
 
 #Read in database from args input file
-def read_database():
+def read_database(database_file):
     global num_transactions
     global num_items
     global columns
 
-    with open(str(args.database_file)) as f:
+    #open file and read lines into array
+    with open(database_file) as f:
         content = f.readlines()
 
+    #Get number of transactions and items from line 1
     num_transactions = int(content[0].split()[0])
     num_items = int(content[0].split()[1])
+
+    #Initialize sparse matrix based on size
     matrix = np.zeros((num_transactions, num_items))
 
+    #For every transaction, fill in sparse matrix
     for i in range(1, num_transactions):
         row = map(int, content[i].split())
         for j in range(len(row)):
             if not row[j] in columns:
                 columns[row[j]] = set()
 
+            #Add set of transactions for every item
             columns[row[j]].add(i-1)
+            #Add item to transaction matrix
             matrix[i-1][row[j]] = 1
 
     return matrix
 
+#Apriori function
 def apriori(database, minsupp, output_file):
     fk_itemsets = []
     k = 1
+    #generate frequent 1-itemsets
     fk = generate_F1(minsupp)
 
+    #while there are still k-itemsets to generate
     while len(fk) > 0:
+        #history of each k item set
         fk_itemsets.append(fk)
-        #print(len(fk))
-        #print("k = "+str(k) + " and " + str(fk))
+
         lk1 = generate_candidates(fk)
         lk1 = prune_candidates(database, fk, lk1, minsupp)
         count_vector = count_support(database, lk1)
@@ -65,12 +75,14 @@ def apriori(database, minsupp, output_file):
         k+=1
         fk = lk1
 
-    output_freq_itemsets(fk_itemsets[-1], output_file)
+    #print itemsets to output file
+    output_freq_itemsets(fk_itemsets, output_file)
 
-    return None
-
+#Generate all frequent 1-item sets
 def generate_F1(minsupp):
     f1 = set()
+
+    #Use column mapping dictionary to pull number transactions containing item
     for key in columns:
         if float(len(columns[key]))/num_transactions > minsupp:
             fr = frozenset([key])
@@ -83,29 +95,40 @@ def generate_candidates(fk):
     Lk1 = set()
     for item_set in fk:
         for item_set2 in fk:
+            #if the intersection of the item sets = k - 2
             if len(item_set & item_set2) == len(item_set) - 1:
+                #and the itemset is not repeated
                 if not (item_set | item_set2) in Lk1:
+                    #add itemset to k+1 candidate set
                     Lk1.add(frozenset(item_set | item_set2))
     return Lk1
 
+#Get count of support for a given set
 def get_count_support(database, s):
+    #get all transactions containing first item in itemset
     first = s.pop()
     transactions = columns[first]
     freq = 0
 
+    #for all the transactions containing the first item in the set
     for t in transactions:
         found = True
+        #see if transaction contains all items in the set
         for i in s:
+            #if not, break
             if database[t][i] == 0:
                 found = False;
                 break;
+        #if so, add support count of the set
         if found:
             freq +=1
 
     return float(freq)
 
+#generates subsets of length n - 1
 def findsubsets(s):
     combinations = set()
+    #get all subsets
     for item in s:
         new_s = set()
         new_s.add(item)
@@ -113,17 +136,24 @@ def findsubsets(s):
 
     return combinations
 
+#prune candidates containing infrequent k-1 subets
 def prune_candidates(database, fk, Lk1, minsupp):
     remove_set = set()
+    #for each subset
     for item_set in Lk1:
         sets = set()
+        #get subsets of length k-1
         sets = findsubsets(set(item_set))
 
         for s in sets:
+            #if the itemset is not known to be frequent
             if not s in fk:
+                #if itemset doesnt meet support
                 if (get_count_support(database, set(s))/num_transactions < minsupp):
-                    remove_set.add(item_set)
+                    if not item_set in remove_set:
+                        remove_set.add(item_set)
 
+    #remove item sets containing subsets
     return Lk1 - remove_set
 
 def eliminate_candidates(count_vector, Lk1, minsupp):
@@ -143,19 +173,31 @@ def count_support(database, Lk1):
 
 def output_freq_itemsets(fk, output_file):
     f = open(output_file, 'w+')
-    num = len(fk)
-    print("Fk = "+str(fk))
-    print("num = "+str(num))
-    print("union is "+str(fk.union()))
-    f.write(str(num) + "\n")
-    for s in fk:
-        f.write(str(' '.join(str(e) for e in s)) + "\n")
 
-    return None
+    for i in range(len(fk)):
+        num = len(fk[i])
+        unique = get_unique_item_size(fk[i])
+        print("Fk = "+str(fk[i]) + " for " +str(i))
+        print("num = "+str(num))
+        print("union is "+str(unique))
+        f.write(str(num) + " " + str(unique) + "\n")
+        for s in fk[i]:
+            f.write(str(' '.join(str(e) for e in s)) + "\n")
+
+        f.write("\n")
+
+def get_unique_item_size(item_sets):
+    unique_items = set()
+    for sets in item_sets:
+        for s in sets:
+            if not s in unique_items:
+                unique_items.add(s)
+
+    return len(unique_items)
 
 def main():
     parse_data_file_args()
-    database = read_database()
+    database = read_database(str(args.database_file))
     apriori(database, float(args.minsupp), str(args.output_file))
 
 if __name__ == "__main__":
