@@ -43,7 +43,7 @@ def read_database(database_file):
     matrix = np.zeros((num_transactions, num_items))
 
     #For every transaction, fill in sparse matrix
-    for i in range(1, num_transactions):
+    for i in range(1, num_transactions+1):
         row = map(int, content[i].split())
         for j in range(len(row)):
             if not row[j] in columns:
@@ -156,45 +156,56 @@ def prune_candidates(database, fk, Lk1, minsupp):
     #remove item sets containing subsets
     return Lk1 - remove_set
 
+#Eliminate candidates that are infrequent
 def eliminate_candidates(count_vector, Lk1, minsupp):
     remove_set = set()
+    #for each set
     for item_set in Lk1:
+        #if the support is less than the minimum support, add to set to be removed
         if count_vector[item_set]/num_transactions < minsupp:
             remove_set.add(item_set)
 
+    #remove infrequent sets
     return Lk1 - remove_set
 
+#Get the count frequency of all item_sets in set Lk1
 def count_support(database, Lk1):
     lk1_map = {}
     for item_set in Lk1:
         lk1_map[item_set] = get_count_support(database, set(item_set))
 
+    #return dictionary mapping each set to a count
     return lk1_map
 
+#for each set of candidates generated from k = 1 to k = n print item sets generated
 def output_freq_itemsets(fk, output_file):
     f = open(output_file, 'w+')
 
+    #for each fk
     for i in range(len(fk)):
+        #get number of transactions and unique elements in set
         num = len(fk[i])
         unique = get_unique_item_size(fk[i])
-        print("Fk = "+str(fk[i]) + " for " +str(i))
-        print("num = "+str(num))
-        print("union is "+str(unique))
+        #print("Fk = "+str(fk[i]) + " for " +str(i))
+        #print("num = "+str(num))
+        #print("union is "+str(unique))
+        #write header information for fk itemsets
         f.write(str(num) + " " + str(unique) + "\n")
+        #write each itemset to file
         for s in fk[i]:
             f.write(str(' '.join(str(e) for e in s)) + "\n")
 
         f.write("\n")
 
+#get number of unique elements contained within a set of sets
 def get_unique_item_size(item_sets):
     unique_items = set()
     for sets in item_sets:
-        for s in sets:
-            if not s in unique_items:
-                unique_items.add(s)
+        unique_items = unique_items | sets
 
     return len(unique_items)
 
+#main function
 def main():
     parse_data_file_args()
     database = read_database(str(args.database_file))
