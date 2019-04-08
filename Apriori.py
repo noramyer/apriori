@@ -50,19 +50,22 @@ def read_database():
     return matrix
 
 def apriori(database, minsupp, output_file):
-    fk = []
     fk_itemsets = []
     k = 1
     fk = generate_F1(minsupp)
 
     while len(fk) > 0:
-        lk1 = generate_candidate(fk)
-        lk1 = prune_candidate(database, lk1, minsupp)
-        count_vector = count_support(lk1)
-        eliminate_candidate(count_vector, lk1)
+        fk_itemsets.append(fk)
+        #print(len(fk))
+        #print("k = "+str(k) + " and " + str(fk))
+        lk1 = generate_candidates(fk)
+        lk1 = prune_candidates(database, fk, lk1, minsupp)
+        count_vector = count_support(database, lk1)
+        lk1 = eliminate_candidates(count_vector, lk1,minsupp)
         k+=1
+        fk = lk1
 
-    output_freq_itemsets()
+    output_freq_itemsets(fk_itemsets[-1], output_file)
 
     return None
 
@@ -76,7 +79,7 @@ def generate_F1(minsupp):
     return f1
 
 #fk-1 x fk-1 generation method
-def generate_candidate(fk):
+def generate_candidates(fk):
     Lk1 = set()
     for item_set in fk:
         for item_set2 in fk:
@@ -85,63 +88,75 @@ def generate_candidate(fk):
                     Lk1.add(frozenset(item_set | item_set2))
     return Lk1
 
-def prune_candidate(database, Lk1, minsupp):
-    eliminated = set()
+def get_count_support(database, s):
+    first = s.pop()
+    transactions = columns[first]
+    freq = 0
+
+    for t in transactions:
+        found = True
+        for i in s:
+            if database[t][i] == 0:
+                found = False;
+                break;
+        if found:
+            freq +=1
+
+    return float(freq)
+
+def findsubsets(s):
+    combinations = set()
+    for item in s:
+        new_s = set()
+        new_s.add(item)
+        combinations.add(frozenset(s - new_s))
+
+    return combinations
+
+def prune_candidates(database, fk, Lk1, minsupp):
+    remove_set = set()
     for item_set in Lk1:
-        first = set(item_set).pop()
-        transactions = columns[first]
-        freq = 0
+        sets = set()
+        sets = findsubsets(set(item_set))
 
-        for t in transactions:
-            found = True
-            for i in item_set:
-                if database[t][i] == 0:
-                    found = False;
-                    break;
-            if found:
-                freq +=1
+        for s in sets:
+            if not s in fk:
+                if (get_count_support(database, set(s))/num_transactions < minsupp):
+                    remove_set.add(item_set)
 
-        if float(freq)/num_transactions > minsupp:
-            eliminated.add(item_set)
+    return Lk1 - remove_set
 
-    return eliminated
-
-def eliminate_candidate(database, Lk1, minsupp):
-    return None
-
-def count_support():
-    eliminated = set()
+def eliminate_candidates(count_vector, Lk1, minsupp):
+    remove_set = set()
     for item_set in Lk1:
-        first = set(item_set).pop()
-        transactions = columns[first]
-        freq = 0
+        if count_vector[item_set]/num_transactions < minsupp:
+            remove_set.add(item_set)
 
-        for t in transactions:
-            found = True
-            for i in item_set:
-                if database[t][i] == 0:
-                    found = False;
-                    break;
-            if found:
-                freq +=1
+    return Lk1 - remove_set
 
-        if float(freq)/num_transactions > minsupp:
-            eliminated.add(item_set)
+def count_support(database, Lk1):
+    lk1_map = {}
+    for item_set in Lk1:
+        lk1_map[item_set] = get_count_support(database, set(item_set))
 
-    return eliminated
+    return lk1_map
 
-def output_freq_itemsets():
+def output_freq_itemsets(fk, output_file):
+    f = open(output_file, 'w+')
+    num = len(fk)
+    print("Fk = "+str(fk))
+    print("num = "+str(num))
+    print("union is "+str(fk.union()))
+    f.write(str(num) + "\n")
+    for s in fk:
+        f.write(str(' '.join(str(e) for e in s)) + "\n")
+
     return None
 
 def main():
     parse_data_file_args()
-    matrix = read_database()
-    #apriori(database, float(args.minsupp), str(args.output_file))
-    f1 = generate_F1(float(args.minsupp))
-    f2 = generate_candidate(f1)
-    print(f2)
-    pruned = prune_candidate(matrix, f2, float(args.minsupp))
-    print(pruned)
+    database = read_database()
+    apriori(database, float(args.minsupp), str(args.output_file))
 
 if __name__ == "__main__":
     main()
