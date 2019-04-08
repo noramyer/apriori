@@ -74,7 +74,7 @@ This method finds all infrequent subsets of length k contained within the item_s
 
 Return: A set of item_sets which represents Lk+1 candidates after pruning.
 
-### def count_support(database, Lk1)
+### def count_support(database, Lk1):
 Parameters:
 ```
 database =  sparse matrix representation of the database file
@@ -83,7 +83,8 @@ Lk1 = set of candidate item_sets, { {1, 2, 3}, {1, 2, 4}, {1, 3, 4} }
 Counts the frequency of each itemset in Lk+1 in the database.
 
 Return: A dictionary mapping Lk+1 itemsets to a count of their frequency in the database.
-### def eliminate_candidates(count_vector, Lk1, minsupp)
+
+### def eliminate_candidates(count_vector, Lk1, minsupp):
 Parameters:
 ```
 count_vector = dictionary mapping of an item_set to the frequency of appearance in database, { ({1, 2, 3}): 1.0, ({1, 2, 4}): 2.0, ({1, 3, 4}): 1.0 }

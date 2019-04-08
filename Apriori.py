@@ -83,7 +83,7 @@ def generate_F1(minsupp):
 
     #Use column mapping dictionary to pull number transactions containing item
     for key in columns:
-        if float(len(columns[key]))/num_transactions > minsupp:
+        if float(len(columns[key]))/num_transactions >= minsupp:
             fr = frozenset([key])
             f1.add(fr)
 
@@ -157,7 +157,6 @@ def prune_candidates(database, fk, Lk1, minsupp):
 
 #Eliminate candidates that are infrequent
 def eliminate_candidates(count_vector, Lk1, minsupp):
-    print(count_vector)
     remove_set = set()
     #for each set
     for item_set in Lk1:
@@ -205,8 +204,11 @@ def get_unique_item_size(item_sets):
 
 #main function
 def main():
+    #get arg parser
     parse_data_file_args()
+    #get database
     database = read_database(str(args.database_file))
+    #apriori
     apriori(database, float(args.minsupp), str(args.output_file))
 
 if __name__ == "__main__":
