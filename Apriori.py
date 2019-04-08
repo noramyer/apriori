@@ -1,6 +1,5 @@
 import argparse
 import numpy as np
-import pandas as pd
 
 #Author: Nora Myer
 #Date: 3/26/19
@@ -71,7 +70,7 @@ def apriori(database, minsupp, output_file):
         lk1 = generate_candidates(fk)
         lk1 = prune_candidates(database, fk, lk1, minsupp)
         count_vector = count_support(database, lk1)
-        lk1 = eliminate_candidates(count_vector, lk1,minsupp)
+        lk1 = eliminate_candidates(count_vector, lk1, minsupp)
         k+=1
         fk = lk1
 
@@ -158,6 +157,7 @@ def prune_candidates(database, fk, Lk1, minsupp):
 
 #Eliminate candidates that are infrequent
 def eliminate_candidates(count_vector, Lk1, minsupp):
+    print(count_vector)
     remove_set = set()
     #for each set
     for item_set in Lk1:
@@ -186,9 +186,7 @@ def output_freq_itemsets(fk, output_file):
         #get number of transactions and unique elements in set
         num = len(fk[i])
         unique = get_unique_item_size(fk[i])
-        #print("Fk = "+str(fk[i]) + " for " +str(i))
-        #print("num = "+str(num))
-        #print("union is "+str(unique))
+
         #write header information for fk itemsets
         f.write(str(num) + " " + str(unique) + "\n")
         #write each itemset to file
